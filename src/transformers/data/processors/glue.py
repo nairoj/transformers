@@ -18,9 +18,8 @@
 import logging
 import os
 
-from ...file_utils import is_tf_available
 from .utils import DataProcessor, InputExample, InputFeatures
-
+from ...file_utils import is_tf_available
 
 if is_tf_available():
     import tensorflow as tf
@@ -28,18 +27,15 @@ if is_tf_available():
 logger = logging.getLogger(__name__)
 
 
-def glue_convert_examples_to_features(
-    examples,
-    tokenizer,
-    max_length=512,
-    task=None,
-    label_list=None,
-    output_mode=None,
-    pad_on_left=False,
-    pad_token=0,
-    pad_token_segment_id=0,
-    mask_padding_with_zero=True,
-):
+def glue_convert_examples_to_features(examples, tokenizer,
+                                      max_length=512,
+                                      task=None,
+                                      label_list=None,
+                                      output_mode=None,
+                                      pad_on_left=False,
+                                      pad_token=0,
+                                      pad_token_segment_id=0,
+                                      mask_padding_with_zero=True):
     """
     Loads a data file into a list of ``InputFeatures``
 
@@ -86,7 +82,12 @@ def glue_convert_examples_to_features(
             example = processor.get_example_from_tensor_dict(example)
             example = processor.tfds_map(example)
 
-        inputs = tokenizer.encode_plus(example.text_a, example.text_b, add_special_tokens=True, max_length=max_length,)
+        inputs = tokenizer.encode_plus(
+            example.text_a,
+            example.text_b,
+            add_special_tokens=True,
+            max_length=max_length,
+        )
         input_ids, token_type_ids = inputs["input_ids"], inputs["token_type_ids"]
 
         # The mask has 1 for real tokens and 0 for padding tokens. Only real
@@ -105,12 +106,10 @@ def glue_convert_examples_to_features(
             token_type_ids = token_type_ids + ([pad_token_segment_id] * padding_length)
 
         assert len(input_ids) == max_length, "Error with input length {} vs {}".format(len(input_ids), max_length)
-        assert len(attention_mask) == max_length, "Error with input length {} vs {}".format(
-            len(attention_mask), max_length
-        )
-        assert len(token_type_ids) == max_length, "Error with input length {} vs {}".format(
-            len(token_type_ids), max_length
-        )
+        assert len(attention_mask) == max_length, "Error with input length {} vs {}".format(len(attention_mask),
+                                                                                            max_length)
+        assert len(token_type_ids) == max_length, "Error with input length {} vs {}".format(len(token_type_ids),
+                                                                                            max_length)
 
         if output_mode == "classification":
             label = label_map[example.label]
@@ -128,36 +127,28 @@ def glue_convert_examples_to_features(
             logger.info("label: %s (id = %d)" % (example.label, label))
 
         features.append(
-            InputFeatures(
-                input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids, label=label
-            )
-        )
+            InputFeatures(input_ids=input_ids,
+                          attention_mask=attention_mask,
+                          token_type_ids=token_type_ids,
+                          label=label))
 
     if is_tf_available() and is_tf_dataset:
-
         def gen():
             for ex in features:
-                yield (
-                    {
-                        "input_ids": ex.input_ids,
-                        "attention_mask": ex.attention_mask,
-                        "token_type_ids": ex.token_type_ids,
-                    },
-                    ex.label,
-                )
+                yield ({'input_ids': ex.input_ids,
+                        'attention_mask': ex.attention_mask,
+                        'token_type_ids': ex.token_type_ids},
+                       ex.label)
 
-        return tf.data.Dataset.from_generator(
-            gen,
-            ({"input_ids": tf.int32, "attention_mask": tf.int32, "token_type_ids": tf.int32}, tf.int64),
-            (
-                {
-                    "input_ids": tf.TensorShape([None]),
-                    "attention_mask": tf.TensorShape([None]),
-                    "token_type_ids": tf.TensorShape([None]),
-                },
-                tf.TensorShape([]),
-            ),
-        )
+        return tf.data.Dataset.from_generator(gen,
+                                              ({'input_ids': tf.int32,
+                                                'attention_mask': tf.int32,
+                                                'token_type_ids': tf.int32},
+                                               tf.int64),
+                                              ({'input_ids': tf.TensorShape([None]),
+                                                'attention_mask': tf.TensorShape([None]),
+                                                'token_type_ids': tf.TensorShape([None])},
+                                               tf.TensorShape([])))
 
     return features
 
@@ -167,21 +158,21 @@ class MrpcProcessor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["sentence1"].numpy().decode("utf-8"),
-            tensor_dict["sentence2"].numpy().decode("utf-8"),
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['sentence1'].numpy().decode('utf-8'),
+                            tensor_dict['sentence2'].numpy().decode('utf-8'),
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
         logger.info("LOOKING AT {}".format(os.path.join(data_dir, "train.tsv")))
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -197,7 +188,8 @@ class MrpcProcessor(DataProcessor):
             text_a = line[3]
             text_b = line[4]
             label = line[0]
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
 
@@ -206,20 +198,21 @@ class MnliProcessor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["premise"].numpy().decode("utf-8"),
-            tensor_dict["hypothesis"].numpy().decode("utf-8"),
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['premise'].numpy().decode('utf-8'),
+                            tensor_dict['hypothesis'].numpy().decode('utf-8'),
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev_matched.tsv")), "dev_matched")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev_matched.tsv")),
+            "dev_matched")
 
     def get_labels(self):
         """See base class."""
@@ -235,7 +228,8 @@ class MnliProcessor(DataProcessor):
             text_a = line[8]
             text_b = line[9]
             label = line[-1]
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
 
@@ -244,7 +238,9 @@ class MnliMismatchedProcessor(MnliProcessor):
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev_mismatched.tsv")), "dev_matched")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev_mismatched.tsv")),
+            "dev_matched")
 
 
 class ColaProcessor(DataProcessor):
@@ -252,20 +248,20 @@ class ColaProcessor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["sentence"].numpy().decode("utf-8"),
-            None,
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['sentence'].numpy().decode('utf-8'),
+                            None,
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -278,7 +274,8 @@ class ColaProcessor(DataProcessor):
             guid = "%s-%s" % (set_type, i)
             text_a = line[3]
             label = line[1]
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
         return examples
 
 
@@ -287,20 +284,20 @@ class Sst2Processor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["sentence"].numpy().decode("utf-8"),
-            None,
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['sentence'].numpy().decode('utf-8'),
+                            None,
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -315,8 +312,13 @@ class Sst2Processor(DataProcessor):
             guid = "%s-%s" % (set_type, i)
             text_a = line[0]
             label = line[1]
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
         return examples
+
+
+class IMDBProcessor(Sst2Processor):
+    """Processor for the IMDB data set (download use torchtext.IMDB.download('./'))."""
 
 
 class StsbProcessor(DataProcessor):
@@ -324,20 +326,20 @@ class StsbProcessor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["sentence1"].numpy().decode("utf-8"),
-            tensor_dict["sentence2"].numpy().decode("utf-8"),
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['sentence1'].numpy().decode('utf-8'),
+                            tensor_dict['sentence2'].numpy().decode('utf-8'),
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -353,7 +355,8 @@ class StsbProcessor(DataProcessor):
             text_a = line[7]
             text_b = line[8]
             label = line[-1]
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
 
@@ -362,20 +365,20 @@ class QqpProcessor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["question1"].numpy().decode("utf-8"),
-            tensor_dict["question2"].numpy().decode("utf-8"),
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['question1'].numpy().decode('utf-8'),
+                            tensor_dict['question2'].numpy().decode('utf-8'),
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -394,7 +397,8 @@ class QqpProcessor(DataProcessor):
                 label = line[5]
             except IndexError:
                 continue
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
 
@@ -403,20 +407,21 @@ class QnliProcessor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["question"].numpy().decode("utf-8"),
-            tensor_dict["sentence"].numpy().decode("utf-8"),
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['question'].numpy().decode('utf-8'),
+                            tensor_dict['sentence'].numpy().decode('utf-8'),
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev_matched")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")),
+            "dev_matched")
 
     def get_labels(self):
         """See base class."""
@@ -432,7 +437,8 @@ class QnliProcessor(DataProcessor):
             text_a = line[1]
             text_b = line[2]
             label = line[-1]
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
 
@@ -441,20 +447,20 @@ class RteProcessor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["sentence1"].numpy().decode("utf-8"),
-            tensor_dict["sentence2"].numpy().decode("utf-8"),
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['sentence1'].numpy().decode('utf-8'),
+                            tensor_dict['sentence2'].numpy().decode('utf-8'),
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -470,7 +476,8 @@ class RteProcessor(DataProcessor):
             text_a = line[1]
             text_b = line[2]
             label = line[-1]
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
 
@@ -479,20 +486,20 @@ class WnliProcessor(DataProcessor):
 
     def get_example_from_tensor_dict(self, tensor_dict):
         """See base class."""
-        return InputExample(
-            tensor_dict["idx"].numpy(),
-            tensor_dict["sentence1"].numpy().decode("utf-8"),
-            tensor_dict["sentence2"].numpy().decode("utf-8"),
-            str(tensor_dict["label"].numpy()),
-        )
+        return InputExample(tensor_dict['idx'].numpy(),
+                            tensor_dict['sentence1'].numpy().decode('utf-8'),
+                            tensor_dict['sentence2'].numpy().decode('utf-8'),
+                            str(tensor_dict['label'].numpy()))
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
     def get_dev_examples(self, data_dir):
         """See base class."""
-        return self._create_examples(self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -508,7 +515,8 @@ class WnliProcessor(DataProcessor):
             text_a = line[1]
             text_b = line[2]
             label = line[-1]
-            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
 
@@ -522,6 +530,7 @@ glue_tasks_num_labels = {
     "qnli": 2,
     "rte": 2,
     "wnli": 2,
+    "imdb": 2
 }
 
 glue_processors = {
@@ -535,6 +544,7 @@ glue_processors = {
     "qnli": QnliProcessor,
     "rte": RteProcessor,
     "wnli": WnliProcessor,
+    "imdb": IMDBProcessor,
 }
 
 glue_output_modes = {
@@ -548,4 +558,5 @@ glue_output_modes = {
     "qnli": "classification",
     "rte": "classification",
     "wnli": "classification",
+    "imdb": "classification",
 }
