@@ -54,7 +54,7 @@ if _has_sklearn:
         assert len(preds) == len(labels)
         if task_name == "cola":
             return {"mcc": matthews_corrcoef(labels, preds)}
-        elif task_name == "sst-2":
+        elif task_name == "sst-2" or task_name=="imdb":
             return {"acc": simple_accuracy(preds, labels)}
         elif task_name == "mrpc":
             return acc_and_f1(preds, labels)
