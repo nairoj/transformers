@@ -23,7 +23,7 @@ EPOCHS = 3
 TASK = "mrpc"
 
 if TASK == "sst-2":
-    TFDS_TASK = "sst2"
+    TFDS_TASK = "sst-2"
 elif TASK == "sts-b":
     TFDS_TASK = "stsb"
 else:
